@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mindfusion"
+version = "1.0.0"
+description = "A diffusion / image-model-like iterative generation and branching version tree interface for LLMs."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+mindfusion = "mindfusion.server:main"

@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>MindFusion</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='25' x='4' font-size='26'>✦</text></svg>" />
+  <style>
+    :root {
+      --bg: #fbfaf8;
+      --surface: #ffffff;
+      --surface-muted: #f3f1ed;
+      --border: #e4e2dd;
+      --text: #18181b;
+      --text-muted: #71717a;
+      --accent: #18181b;
+      --accent-fg: #ffffff;
+      --chip-bg: #fef3c7;
+      --chip-border: #f59e0b;
+      --chip-text: #92400e;
+      --code-bg: #f1efe9;
+      --quote-bg: #f6f5f1;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --ins-bg: rgba(16, 185, 129, 0.16);
+      --del-bg: rgba(239, 68, 68, 0.13);
+      --grain-opacity: 0.16;
+      --sweep: rgba(255, 255, 255, 0.7);
+      --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+      --mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111113;
+        --surface: #18181b;
+        --surface-muted: #222226;
+        --border: #2e2e34;
+        --text: #f4f4f5;
+        --text-muted: #a1a1aa;
+        --accent: #f4f4f5;
+        --accent-fg: #111113;
+        --chip-bg: rgba(245, 158, 11, 0.15);
+        --chip-border: #f59e0b;
+        --chip-text: #fcd34d;
+        --code-bg: #1e1e24;
+        --quote-bg: #18181d;
+        --danger: #f87171;
+        --danger-bg: rgba(239, 68, 68, 0.12);
+        --ins-bg: rgba(16, 185, 129, 0.22);
+        --del-bg: rgba(239, 68, 68, 0.2);
+        --grain-opacity: 0.22;
+        --sweep: rgba(255, 255, 255, 0.07);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+    }
+
+    /* ---------- Top bar ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      padding-top: max(10px, env(safe-area-inset-top));
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--bg);
+    }
+    .topbar-left, .topbar-right { display: flex; align-items: center; gap: 6px; }
+    .topbar-left { min-width: 0; flex: 1 1 auto; }
+    .topbar-right { flex-shrink: 0; }
+    #docsModalBtn { min-width: 0; max-width: 100%; flex: 0 1 auto; }
+    #treeModalBtn { flex-shrink: 0; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 13px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 500;
+      font-family: var(--font);
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: opacity 0.15s, transform 0.1s, background 0.15s, color 0.15s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .btn:disabled { opacity: 0.35; cursor: default; }
+    .btn-ghost { background: transparent; border-color: transparent; color: var(--text-muted); padding: 0 10px; }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); background: var(--surface-muted); }
+    .btn-ghost.on { color: var(--text); background: var(--surface-muted); border-color: var(--border); }
+    .btn-small { height: 30px; padding: 0 10px; font-size: 12.5px; }
+    .glyph { font-family: var(--mono); font-weight: 600; font-size: 14px; min-width: 36px; }
+
+    #toggleCommentBtn.has-selection { color: var(--chip-text); background: var(--chip-bg); border-color: var(--chip-border); }
+
+    .btn-diffuse {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border-color: var(--accent);
+      font-weight: 600;
+      width: 40px;
+      padding: 0;
+      font-size: 16px;
+      position: relative;
+    }
+    .btn-diffuse .stop { display: none; width: 10px; height: 10px; border-radius: 2px; background: currentColor; }
+    .btn-diffuse.busy .star { display: none; }
+    .btn-diffuse.busy .stop { display: block; }
+    .btn-diffuse.busy::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-right-color: currentColor;
+      animation: spin 0.9s linear infinite;
+      opacity: 0.8;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .doc-pill { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 500; }
+    .version-pill { font-family: var(--mono); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+    .version-pill .count { color: var(--text-muted); font-weight: 400; }
+    .edited-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warn); display: none; }
+    .version-pill.edited .edited-dot { display: inline-block; }
+    .caret { color: var(--text-muted); font-size: 11px; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-muted); display: inline-block; flex-shrink: 0; }
+    .status-dot.live { background: var(--ok); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.18); }
+    .status-dot.fallback { background: var(--ok); opacity: 0.55; }
+    .status-dot.none { background: var(--warn); }
+    .status-dot.offline { background: var(--danger); }
+
+    /* ---------- Progress ---------- */
+    .progress-bar { height: 2px; width: 100%; overflow: hidden; flex-shrink: 0; position: relative; }
+    .progress-bar.active::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0;
+      width: 35%;
+      background: var(--text);
+      animation: slide 1.3s ease-in-out infinite;
+    }
+    @keyframes slide { from { left: -35%; } to { left: 100%; } }
+
+    /* ---------- Banners ---------- */
+    .banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .banner.open { display: flex; }
+    .banner .msg { flex: 1; min-width: 0; line-height: 1.4; }
+    .banner-error { background: var(--danger-bg); color: var(--danger); }
+    .banner-diff { background: var(--surface-muted); color: var(--text); }
+    .banner-diff .stat { font-family: var(--mono); font-size: 12px; margin-left: 8px; }
+    .stat .plus { color: var(--ok); }
+    .stat .minus { color: var(--danger); }
+
+    /* ---------- Comments ---------- */
+    .comments-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-muted);
+      flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    .comments-bar:empty { display: none; }
+    .comment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 4px 3px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
+      color: var(--chip-text);
+      white-space: nowrap;
+      flex-shrink: 0;
+      max-width: 80vw;
+    }
+    .comment-chip .label { overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+    .comment-chip button {
+      background: none; border: none; color: inherit; cursor: pointer;
+      font-size: 12px; line-height: 1; width: 22px; height: 22px; border-radius: 50%;
+    }
+    .comment-chip button:hover { background: rgba(0, 0, 0, 0.08); }
+
+    .comment-input-row {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    .comment-input-row.open { display: flex; }
+    .comment-quote {
+      font-size: 12px; color: var(--chip-text); background: var(--chip-bg);
+      border-left: 3px solid var(--chip-border); padding: 3px 8px; border-radius: 0 4px 4px 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .comment-quote:empty { display: none; }
+    .comment-input-line { display: flex; gap: 8px; align-items: center; }
+    .comment-input-line input {
+      flex: 1; height: 36px; padding: 0 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-size: 16px; outline: none; min-width: 0;
+    }
+    .comment-input-line input:focus { border-color: var(--text-muted); }
+
+    /* ---------- Page ---------- */
+    .editor-wrap { flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+
+    .page {
+      flex: 1;
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px; /* >=16px prevents iOS Safari auto-zoom */
+      line-height: 1.7;
+      padding: 24px 20px 96px;
+      padding-bottom: calc(96px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+      overflow-wrap: break-word;
+      transition: opacity 0.2s;
+    }
+    /* While diffusing, the page itself looks like it's being re-noised: text breathes in and out
+       of focus under a drifting grain layer and a soft sweep. On completion it "denoises" into place. */
+    #notepad.busy { opacity: 0.55; cursor: progress; animation: mf-breathe 2.4s ease-in-out infinite; }
+    @keyframes mf-breathe {
+      0%, 100% { filter: blur(0); }
+      50% { filter: blur(1.6px); }
+    }
+    .editor-wrap.busy::before,
+    .editor-wrap.busy::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .editor-wrap.busy::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: var(--grain-opacity);
+      animation: mf-grain 0.9s steps(6) infinite;
+    }
+    .editor-wrap.busy::after {
+      background: linear-gradient(105deg, transparent 35%, var(--sweep) 50%, transparent 65%);
+      background-size: 260% 100%;
+      animation: mf-sweep 1.8s linear infinite;
+    }
+    @keyframes mf-grain {
+      0% { background-position: 0 0; }
+      20% { background-position: -40px 25px; }
+      40% { background-position: 30px -50px; }
+      60% { background-position: -65px -15px; }
+      80% { background-position: 50px 60px; }
+      100% { background-position: 0 0; }
+    }
+    @keyframes mf-sweep {
+      from { background-position: 130% 0; }
+      to { background-position: -130% 0; }
+    }
+    #notepad.reveal { animation: mf-reveal 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); }
+    @keyframes mf-reveal {
+      from { filter: blur(10px); opacity: 0.15; }
+      60% { opacity: 1; }
+      to { filter: blur(0); opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #notepad.busy, #notepad.reveal, .editor-wrap.busy::before, .editor-wrap.busy::after { animation: none; }
+    }
+    #notepad:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text-muted);
+      opacity: 0.7;
+      pointer-events: none;
+      white-space: pre-wrap;
+      display: block;
+    }
+    #diffView { display: none; }
+    .diff-mode #diffView { display: block; }
+    .diff-mode #notepad { display: none; }
+
+    ::highlight(mf-inline) { background-color: var(--chip-bg); color: var(--chip-text); }
+    ::highlight(mf-quote) { background-color: rgba(245, 158, 11, 0.22); text-decoration: underline 2px var(--chip-border); }
+
+    .page h1 { font-size: 1.75rem; font-weight: 750; letter-spacing: -0.02em; line-height: 1.25; margin: 0 0 0.75rem 0; }
+    .page h2 {
+      font-size: 1.32rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.35;
+      margin: 1.5rem 0 0.55rem 0; padding-bottom: 0.25rem; border-bottom: 1px solid var(--border);
+    }
+    .page h3 { font-size: 1.1rem; font-weight: 650; margin: 1.15rem 0 0.4rem 0; }
+    .page h4, .page h5, .page h6 { font-size: 1rem; font-weight: 650; margin: 1rem 0 0.35rem 0; }
+    .page p { margin: 0 0 0.9rem 0; }
+    .page ul, .page ol { margin: 0 0 1rem 1.35rem; }
+    .page li { margin-bottom: 0.35rem; }
+    .page blockquote, .page aside {
+      margin: 1rem 0; padding: 0.75rem 1rem; border-left: 3px solid var(--text);
+      background: var(--quote-bg); border-radius: 0 8px 8px 0;
+    }
+    .page pre {
+      margin: 1rem 0; padding: 0.85rem 1rem; background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: 0.88rem; line-height: 1.5;
+      white-space: pre;
+    }
+    .page code { font-family: var(--mono); font-size: 0.88em; background: var(--code-bg); padding: 0.15em 0.38em; border-radius: 4px; }
+    .page pre code { background: transparent; padding: 0; }
+    .page table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.92rem; display: block; overflow-x: auto; }
+    .page th, .page td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+    .page th { background: var(--surface-muted); font-weight: 600; }
+    .page details { margin: 0.85rem 0; padding: 0.65rem 0.9rem; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 8px; }
+    .page summary { font-weight: 600; cursor: pointer; }
+    .page mark { background: var(--chip-bg); color: var(--chip-text); padding: 0.1em 0.3em; border-radius: 4px; }
+    .page hr { border: none; border-top: 1px solid var(--border); margin: 1.4rem 0; }
+    .page img { max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0.75rem 0; }
+    .page figure { margin: 1rem 0; }
+    .page figcaption { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.35rem; }
+    .page a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+    /* Diff rendering */
+    .d-eq { opacity: 0.55; }
+    .d-del { background: var(--del-bg); text-decoration: line-through; text-decoration-color: var(--danger); border-radius: 4px; padding: 0 4px; }
+    .d-ins { background: var(--ins-bg); border-radius: 4px; padding: 0 4px; }
+    .page del { background: var(--del-bg); text-decoration-color: var(--danger); border-radius: 3px; }
+    .page ins { background: var(--ins-bg); text-decoration: none; border-radius: 3px; }
+    .d-li::before { content: "• "; color: var(--text-muted); }
+    .d-gap {
+      display: block; width: 100%; margin: 0.4rem 0 1rem; padding: 6px; font: 12px var(--mono);
+      color: var(--text-muted); background: none; border: 1px dashed var(--border); border-radius: 6px; cursor: pointer;
+    }
+    .d-empty { color: var(--text-muted); text-align: center; padding: 3rem 0; }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translate(-50%, 6px);
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 12.5px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+      z-index: 2;
+    }
+    .toast.visible { opacity: 1; transform: translate(-50%, 0); }
+    .toast.subtle { background: var(--surface-muted); color: var(--text-muted); border: 1px solid var(--border); box-shadow: none; }
+
+    /* ---------- Modals ---------- */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(2px);
+      display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+      width: 100%; max-width: 540px; max-height: 82dvh; display: flex; flex-direction: column;
+      overflow: hidden; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 14.5px;
+    }
+    .modal-header .sub { font-size: 11.5px; font-weight: 400; color: var(--text-muted); font-family: var(--mono); margin-left: 6px; }
+    .modal-body { padding: 14px 16px; padding-bottom: max(14px, env(safe-area-inset-bottom)); overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+    .modal-foot { font-size: 11px; color: var(--text-muted); font-family: var(--mono); word-break: break-all; }
+
+    .tree-graph-box { width: 100%; overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 6px; text-align: center; }
+    .te { fill: none; stroke: var(--text-muted); stroke-opacity: 0.5; stroke-width: 1.5; }
+    .tn { cursor: pointer; }
+    .tn circle { fill: var(--surface-muted); stroke: var(--text-muted); stroke-width: 1.5; }
+    .tn text { fill: var(--text); font: 600 9.5px var(--mono); pointer-events: none; }
+    .tn:hover circle { stroke: var(--text); }
+    .tn.active circle { fill: var(--text); stroke: var(--text); }
+    .tn.active text { fill: var(--bg); }
+    .tn.edited circle { stroke: var(--warn); stroke-width: 2.5; }
+
+    .item-list { display: flex; flex-direction: column; gap: 8px; }
+    .item {
+      padding: 11px 13px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg);
+      cursor: pointer; display: flex; flex-direction: column; gap: 4px; text-align: left; font: inherit; color: inherit; width: 100%;
+    }
+    .item:hover { border-color: var(--text-muted); }
+    .item.active { border-color: var(--text); background: var(--surface-muted); cursor: default; }
+    .item-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); }
+    .item-top strong { color: var(--text); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-top .mono { font-family: var(--mono); }
+    .item-top .time { flex-shrink: 0; }
+    .item-summary { font-size: 12px; color: var(--text-muted); }
+    .item-preview { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 999px; margin-left: 4px; vertical-align: 1px; }
+    .badge-edited { background: var(--chip-bg); color: var(--chip-text); }
+    .badge-current { background: var(--text); color: var(--bg); }
+    .item-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+    @media (max-width: 600px) {
+      .topbar { padding: 8px 10px; padding-top: max(8px, env(safe-area-inset-top)); gap: 4px; }
+      .topbar-left, .topbar-right { gap: 2px; }
+      .topbar .btn { height: 36px; padding: 0 9px; font-size: 13px; gap: 5px; }
+      .topbar .glyph { min-width: 34px; padding: 0 6px; }
+      .topbar .btn-diffuse { width: 40px; padding: 0; }
+      .page { padding: 18px 16px 88px; }
+      .banner, .comments-bar, .comment-input-row { padding-left: 12px; padding-right: 12px; }
+      .modal-backdrop { align-items: flex-end; padding: 0; }
+      .modal { max-width: 100%; border-bottom-left-radius: 0; border-bottom-right-radius: 0; max-height: 88dvh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn" id="docsModalBtn" aria-haspopup="dialog" aria-label="Documents">
+          <span class="status-dot" id="agentDot"></span>
+          <span class="doc-pill" id="docLabel">Untitled</span>
+          <span class="caret">▾</span>
+        </button>
+        <button class="btn" id="treeModalBtn" aria-haspopup="dialog" aria-label="Versions">
+          <span class="version-pill" id="versionPill"><span id="versionLabel">v0</span><span class="edited-dot" title="Unsaved edits on this version"></span><span class="count" id="versionCount"></span></span>
+          <span class="caret">▾</span>
+        </button>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost glyph" id="diffBtn" title="Compare with parent version" aria-label="Compare with parent version" aria-pressed="false">±</button>
+        <button class="btn btn-ghost glyph" id="toggleCommentBtn" title="Comment on selection (⌘/)" aria-label="Add comment">//</button>
+        <button class="btn btn-ghost glyph" id="newBtn" title="New document" aria-label="New document" style="font-size: 18px;">+</button>
+        <button class="btn btn-diffuse" id="diffuseBtn" title="Diffuse (⌘↵)" aria-label="Diffuse"><span class="star">✦</span><span class="stop"></span></button>
+      </div>
+    </header>
+
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="banner banner-error" id="errorBanner" role="alert">
+      <span class="msg" id="errorMsg"></span>
+      <button class="btn btn-ghost btn-small" id="errorRetryBtn">Retry</button>
+      <button class="btn btn-ghost btn-small" id="errorCloseBtn" aria-label="Dismiss">✕</button>
+    </div>
+
+    <div class="banner banner-diff" id="diffBanner">
+      <span class="msg" id="diffMsg"></span>
+      <button class="btn btn-small" id="diffDoneBtn">Done</button>
+    </div>
+
+    <div class="comment-input-row" id="commentInputRow">
+      <div class="comment-quote" id="commentQuote"></div>
+      <div class="comment-input-line">
+        <input type="text" id="commentInput" enterkeyhint="done" autocomplete="off" placeholder="What should change?" />
+        <button class="btn" id="saveCommentBtn">Add</button>
+      </div>
+    </div>
+
+    <div class="comments-bar" id="commentsBar"></div>
+
+    <main class="editor-wrap" id="editorWrap">
+      <div
+        id="notepad"
+        class="page"
+        contenteditable="true"
+        spellcheck="true"
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Page"
+        data-placeholder="Start with rough notes or an outline.&#10;&#10;Tap ✦ to diffuse them into a polished page. Then edit anything, or add instructions on their own line starting with //&#10;&#10;// e.g. add a comparison table&#10;&#10;⌘/Ctrl + Enter diffuses."
+      ></div>
+      <div id="diffView" class="page" aria-live="polite"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="docsModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="docsTitle">
+      <div class="modal-header">
+        <span id="docsTitle">Documents <span class="sub" id="docCountLabel"></span></span>
+        <span>
+          <button class="btn btn-small" id="newDocInModalBtn">+ New</button>
+          <button class="btn btn-ghost btn-small" data-close aria-label="Close">✕</button>
+        </span>
+      </div>
+      <div class="modal-body">
+        <div class="item-list" id="documentsList"></div>
+        <div class="modal-foot" id="agentDetail"></div>
+        <div class="modal-foot" id="currentFolderLabel"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="treeModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="treeTitle">
+      <div class="modal-header">
+        <span id="treeTitle">Versions</span>
+        <button class="btn btn-ghost btn-small" data-close aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="tree-graph-box"><svg id="treeSvg" width="280" height="120" role="img" aria-label="Version tree"></svg></div>
+        <div class="item-list" id="versionList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------------------------------------------------------------- state
+    let appState = null;
+    let activeNodeId = null;
+    let watchedJobId = null;      // job this tab is waiting on (to report its outcome)
+    let busySince = 0;
+    let busyTimer = null;
+    let dirty = false;
+    let pendingSave = null;       // { nodeId, timer }
+    let selectedQuote = "";
+    let lastLoadedNodeId = null;
+    let lastLoadedContent = null;
+    let diffMode = false;
+    let online = true;
+    let lastError = null;         // { message, retry }
+
+    const $ = (id) => document.getElementById(id);
+    const app = $("app");
+    const notepad = $("notepad");
+    const diffView = $("diffView");
+    const diffuseBtn = $("diffuseBtn");
+    const diffBtn = $("diffBtn");
+    const commentBtn = $("toggleCommentBtn");
+    const commentsBar = $("commentsBar");
+    const commentInputRow = $("commentInputRow");
+    const commentInput = $("commentInput");
+    const docsModal = $("docsModalBackdrop");
+    const treeModal = $("treeModalBackdrop");
+    const toastEl = $("toast");
+    const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+    // ---------------------------------------------------------------- api
+    async function api(path, body) {
+      const opts = body === undefined
+        ? { cache: "no-store" }
+        : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+      let r;
+      try {
+        r = await fetch(path, opts);
+      } catch (e) {
+        setOnline(false);
+        throw new Error("Can't reach the MindFusion server.");
+      }
+      let data = {};
+      try { data = await r.json(); } catch (e) {}
+      if (!r.ok) throw new Error(data.error || `Request failed (${r.status})`);
+      return data;
+    }
+
+    // ---------------------------------------------------------------- utils
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    function isHtmlString(str) { return /<\/?[a-z][^>]*>/i.test(str || ""); }
+    function htmlToText(html) {
+      const tmp = document.createElement("div");
+      // Pad block boundaries so "<h1>A</h1><p>B</p>" previews as "A B", not "AB".
+      tmp.innerHTML = sanitizeHtml(html || "").replace(/(<\/?(p|div|li|h[1-6]|blockquote|pre|tr|td|th)(\s[^>]*)?>|<br\s*\/?>)/gi, " $1 ");
+      return (tmp.textContent || "").replace(/\s+/g, " ").trim();
+    }
+    function textToHtml(text) {
+      return (text || "").split("\n").map(l => `<p>${escapeHtml(l) || "<br>"}</p>`).join("");
+    }
+    function relTime(epochSec) {
+      if (!epochSec) return "";
+      const s = Math.max(0, Date.now() / 1000 - epochSec);
+      if (s < 45) return "just now";
+      if (s < 3600) return `${Math.round(s / 60)}m ago`;
+      if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+      if (s < 86400 * 7) return `${Math.round(s / 86400)}d ago`;
+      return new Date(epochSec * 1000).toLocaleDateString();
+    }
+    function shortLabel(n) {
+      if (!n.parent_id) return "Seed";
+      return (n.label || "").replace(/^v\d+\s*·\s*/, "") || "Version";
+    }
+    function displayHtml(node) {
+      if (!node) return "";
+      if (node.draft !== undefined && node.draft !== null) return node.draft;
+      return node.content || node.seed_outline || "";
+    }
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // ---------------------------------------------------------------- sanitizer
+    // Generated and pasted HTML is rendered into a live, editable page, so strip anything active.
+    const ALLOWED_TAGS = new Set(("P DIV BR H1 H2 H3 H4 H5 H6 UL OL LI BLOCKQUOTE ASIDE PRE CODE TABLE THEAD TBODY TFOOT TR TH TD " +
+      "CAPTION DETAILS SUMMARY MARK STRONG B EM I U S DEL INS SUB SUP SMALL HR A IMG FIGURE FIGCAPTION DL DT DD " +
+      "SECTION ARTICLE HEADER FOOTER KBD Q CITE ABBR TIME").split(" "));
+    const DROP_TAGS = new Set(("SCRIPT STYLE IFRAME OBJECT EMBED LINK META TITLE HEAD NOSCRIPT TEMPLATE FORM INPUT BUTTON " +
+      "SELECT TEXTAREA SVG MATH CANVAS VIDEO AUDIO SOURCE BASE FRAME FRAMESET").split(" "));
+    const ALLOWED_ATTRS = { A: ["href", "title"], IMG: ["src", "alt", "title", "width", "height"], TD: ["colspan", "rowspan"],
+      TH: ["colspan", "rowspan"], DETAILS: ["open"], OL: ["start"], TIME: ["datetime"], ABBR: ["title"] };
+
+    function sanitizeHtml(html) {
+      const doc = new DOMParser().parseFromString(`<body>${html || ""}</body>`, "text/html");
+      const walk = (el) => {
+        for (const child of [...el.childNodes]) {
+          if (child.nodeType === Node.COMMENT_NODE) { child.remove(); continue; }
+          if (child.nodeType !== Node.ELEMENT_NODE) continue;
+          const tag = child.tagName;
+          if (DROP_TAGS.has(tag)) { child.remove(); continue; }
+          walk(child);
+          // Google Docs wraps whole pastes in <b id="docs-internal-guid-…">; that isn't real bold.
+          const fakeBold = tag === "B" && (child.id || "").startsWith("docs-internal-guid");
+          if (!ALLOWED_TAGS.has(tag) || fakeBold) { child.replaceWith(...child.childNodes); continue; }
+          const keep = ALLOWED_ATTRS[tag] || [];
+          for (const attr of [...child.attributes]) {
+            if (!keep.includes(attr.name)) child.removeAttribute(attr.name);
+          }
+          if (tag === "A" && !/^(https?:|mailto:|#)/i.test(child.getAttribute("href") || "")) child.removeAttribute("href");
+          if (tag === "IMG" && !/^(https?:|data:image\/)/i.test(child.getAttribute("src") || "")) child.remove();
+        }
+      };
+      walk(doc.body);
+      return doc.body.innerHTML;
+    }
+
+    // ---------------------------------------------------------------- toast & banners
+    let toastTimer = null;
+    function toast(msg, { sticky = false, subtle = false } = {}) {
+      toastEl.textContent = msg;
+      toastEl.classList.toggle("subtle", subtle);
+      toastEl.classList.add("visible");
+      clearTimeout(toastTimer);
+      if (!sticky) toastTimer = setTimeout(() => toastEl.classList.remove("visible"), 2600);
+    }
+    function hideToast() { clearTimeout(toastTimer); toastEl.classList.remove("visible"); }
+
+    function showError(message, retry) {
+      lastError = { message, retry };
+      $("errorMsg").textContent = message;
+      $("errorRetryBtn").style.display = retry ? "" : "none";
+      $("errorBanner").classList.add("open");
+    }
+    function clearError() { lastError = null; $("errorBanner").classList.remove("open"); }
+    $("errorCloseBtn").addEventListener("click", clearError);
+    $("errorRetryBtn").addEventListener("click", () => { const r = lastError?.retry; clearError(); if (r) r(); });
+
+    // ---------------------------------------------------------------- editor content
+    function setNotepadContent(raw, nodeId) {
+      const val = (raw || "").trim();
+      lastLoadedNodeId = nodeId;
+      lastLoadedContent = val;
+      notepad.innerHTML = !val ? "" : isHtmlString(val) ? sanitizeHtml(val) : textToHtml(val);
+      refreshHighlights();
+    }
+
+    function getNotepadHtml() {
+      if (notepad.innerText.trim() === "" && !notepad.querySelector("img, hr, table")) return "";
+      return notepad.innerHTML.trim();
+    }
+
+    // ---------------------------------------------------------------- autosave
+    function scheduleSave() {
+      const nodeId = activeNodeId;
+      if (!nodeId) return;
+      dirty = true;
+      lastLoadedContent = getNotepadHtml();
+      if (pendingSave) clearTimeout(pendingSave.timer);
+      pendingSave = { nodeId, timer: setTimeout(flushSave, 600) };
+    }
+
+    async function flushSave({ keepalive = false } = {}) {
+      if (!pendingSave) return;
+      const { nodeId, timer } = pendingSave;
+      clearTimeout(timer);
+      pendingSave = null;
+      if (nodeId !== activeNodeId) return; // never write one version's text into another
+      const html = getNotepadHtml();
+      const body = { node_id: nodeId, content: html, seed_outline: notepad.innerText.trim() };
+      try {
+        if (keepalive) {
+          fetch("/api/node/update", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), keepalive: true });
+        } else {
+          const res = await api("/api/node/update", body);
+          if (!pendingSave) dirty = false;
+          if (res.state) renderState(res.state);
+        }
+      } catch (e) {
+        showError(`Couldn't save your edits: ${e.message}`, () => { scheduleSave(); flushSave(); });
+      }
+    }
+    document.addEventListener("visibilitychange", () => { if (document.hidden) flushSave({ keepalive: true }); });
+    window.addEventListener("pagehide", () => flushSave({ keepalive: true }));
+
+    notepad.addEventListener("input", () => {
+      if (notepad.innerText.trim() === "" && notepad.innerHTML !== "" && !notepad.querySelector("img, hr, table")) {
+        notepad.innerHTML = "";
+      }
+      scheduleSave();
+      refreshHighlightsSoon();
+    });
+
+    // Paste: keep structure (headings, lists, links) but drop foreign styling and anything active.
+    notepad.addEventListener("paste", (e) => {
+      const cd = e.clipboardData;
+      if (!cd) return;
+      e.preventDefault();
+      const html = cd.getData("text/html");
+      if (html) document.execCommand("insertHTML", false, sanitizeHtml(html));
+      else document.execCommand("insertText", false, cd.getData("text/plain"));
+    });
+
+    // Links aren't clickable while editing; ⌘/Ctrl-click opens them.
+    notepad.addEventListener("click", (e) => {
+      const a = e.target.closest("a[href]");
+      if (a && (e.metaKey || e.ctrlKey)) { e.preventDefault(); window.open(a.href, "_blank", "noopener"); }
+    });
+
+    // ---------------------------------------------------------------- highlights
+    // `// instruction` lines and quoted comment targets are highlighted without touching the DOM.
+    const BLOCK_TAGS = new Set("P DIV LI UL OL H1 H2 H3 H4 H5 H6 BLOCKQUOTE PRE TABLE THEAD TBODY TR TD TH SECTION ARTICLE ASIDE HEADER FOOTER DETAILS SUMMARY FIGURE FIGCAPTION HR DL DT DD".split(" "));
+
+    function inlineCommentRanges(root) {
+      const ranges = [];
+      const walk = (el) => {
+        let seg = [];
+        const flush = () => {
+          const nodes = seg.filter(n => n.nodeName !== "BR");
+          seg = [];
+          if (!nodes.length) return;
+          const text = nodes.map(n => n.textContent).join("").replace(/ /g, " ").trim();
+          if (text.startsWith("//") || text.startsWith(">>")) {
+            const r = document.createRange();
+            r.setStartBefore(nodes[0]);
+            r.setEndAfter(nodes[nodes.length - 1]);
+            ranges.push(r);
+          }
+        };
+        for (const child of el.childNodes) {
+          if (child.nodeType === 1 && BLOCK_TAGS.has(child.tagName)) {
+            flush();
+            if (child.tagName !== "PRE") walk(child);
+          } else if (child.nodeName === "BR") { flush(); }
+          else seg.push(child);
+        }
+        flush();
+      };
+      walk(root);
+      return ranges;
+    }
+
+    function findTextRange(root, needle) {
+      if (!needle) return null;
+      const texts = [];
+      const it = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let full = "";
+      while (it.nextNode()) { texts.push({ node: it.currentNode, start: full.length }); full += it.currentNode.textContent; }
+      const norm = (s) => s.replace(/ /g, " ");
+      const idx = norm(full).indexOf(norm(needle));
+      if (idx < 0) return null;
+      const end = idx + needle.length;
+      const locate = (pos) => {
+        for (let i = texts.length - 1; i >= 0; i--) if (texts[i].start <= pos) return { node: texts[i].node, off: pos - texts[i].start };
+        return null;
+      };
+      const a = locate(idx), b = locate(end);
+      if (!a || !b) return null;
+      const r = document.createRange();
+      r.setStart(a.node, Math.min(a.off, a.node.length));
+      r.setEnd(b.node, Math.min(b.off, b.node.length));
+      return r;
+    }
+
+    function refreshHighlights() {
+      if (!(window.CSS && CSS.highlights && window.Highlight)) return;
+      CSS.highlights.set("mf-inline", new Highlight(...inlineCommentRanges(notepad)));
+      const node = appState?.nodes?.[activeNodeId];
+      const quotes = (node?.comments || []).filter(c => !c.resolved && c.quote).map(c => findTextRange(notepad, c.quote)).filter(Boolean);
+      CSS.highlights.set("mf-quote", new Highlight(...quotes));
+    }
+    let hlTimer = null;
+    function refreshHighlightsSoon() { clearTimeout(hlTimer); hlTimer = setTimeout(refreshHighlights, 120); }
+
+    // ---------------------------------------------------------------- comments
+    function updateSelection() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      if (!notepad.contains(sel.anchorNode)) return; // focus moved to the comment box etc.: keep last quote
+      const text = sel.toString().replace(/\s+/g, " ").trim();
+      selectedQuote = text.slice(0, 120);
+      commentBtn.classList.toggle("has-selection", Boolean(selectedQuote));
+    }
+    document.addEventListener("selectionchange", updateSelection);
+    commentBtn.addEventListener("mousedown", (e) => e.preventDefault()); // keep the text selection on desktop
+
+    function openCommentRow() {
+      if (diffMode) setDiffMode(false);
+      updateSelection();
+      $("commentQuote").textContent = selectedQuote ? `“${selectedQuote}”` : "";
+      commentInput.placeholder = selectedQuote ? "What should change here?" : "Instruction for the whole page…";
+      commentInputRow.classList.add("open");
+      commentInput.focus();
+    }
+    function closeCommentRow() { commentInputRow.classList.remove("open"); commentInput.value = ""; }
+    commentBtn.addEventListener("click", () => {
+      commentInputRow.classList.contains("open") ? closeCommentRow() : openCommentRow();
+    });
+
+    async function submitComment() {
+      const text = commentInput.value.trim();
+      if (!text || !activeNodeId) { if (!text) closeCommentRow(); return; }
+      try {
+        const res = await api("/api/comment/add", { node_id: activeNodeId, quote: selectedQuote, comment: text });
+        selectedQuote = "";
+        commentBtn.classList.remove("has-selection");
+        closeCommentRow();
+        if (res.state) renderState(res.state);
+        toast("Comment added · tap ✦ to apply", { subtle: true });
+      } catch (e) { showError(e.message); }
+    }
+    $("saveCommentBtn").addEventListener("click", submitComment);
+    commentInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); submitComment(); }
+      if (e.key === "Escape") { e.stopPropagation(); closeCommentRow(); notepad.focus(); }
+    });
+
+    function renderComments(node) {
+      const active = (node?.comments || []).filter(c => !c.resolved);
+      commentsBar.innerHTML = active.map(c => {
+        const label = c.quote ? `“${c.quote.slice(0, 24)}${c.quote.length > 24 ? "…" : ""}” ${c.comment}` : c.comment;
+        return `<span class="comment-chip"><span class="label" data-quote="${escapeHtml(c.quote || "")}" title="${escapeHtml(c.comment)}">💬 ${escapeHtml(label)}</span>` +
+               `<button data-cid="${escapeHtml(c.id)}" aria-label="Remove comment">✕</button></span>`;
+      }).join("");
+      commentsBar.querySelectorAll("button[data-cid]").forEach(btn => btn.addEventListener("click", async () => {
+        try {
+          const res = await api("/api/comment/delete", { node_id: activeNodeId, comment_id: btn.dataset.cid });
+          if (res.state) renderState(res.state);
+        } catch (e) { showError(e.message); }
+      }));
+      commentsBar.querySelectorAll(".label[data-quote]").forEach(el => el.addEventListener("click", () => {
+        const r = findTextRange(notepad, el.dataset.quote);
+        if (r) r.startContainer.parentElement?.scrollIntoView({ block: "center", behavior: "smooth" });
+      }));
+    }
+
+    // ---------------------------------------------------------------- diffuse / cancel
+    function runningJob(state) {
+      const running = Object.values(state?.jobs || {}).filter(j => j.status === "pending" || j.status === "denoising");
+      return running.sort((a, b) => a.created_at - b.created_at).pop() || null;
+    }
+
+    async function diffuse(override) {
+      if (!activeNodeId) return;
+      const job = runningJob(appState);
+      if (job) return cancelJob(job.id);
+      if (diffMode) setDiffMode(false);
+      const html = override?.content ?? getNotepadHtml();
+      const plain = override ? htmlToText(html) : notepad.innerText.trim();
+      if (!plain && !html) { toast("Write some notes first"); notepad.focus(); return; }
+      clearError();
+      await flushSave();
+      const parentId = override?.parent_id ?? activeNodeId;
+      setBusy(true, "Starting…");
+      try {
+        const body = { parent_id: parentId, seed_outline: plain, content: html };
+        if (override?.comments) body.comments = override.comments;
+        const res = await api("/api/generate", body);
+        if (res.job) watchedJobId = res.job.id;
+        if (res.state) renderState(res.state);
+      } catch (e) {
+        setBusy(false);
+        showError(e.message, () => diffuse(override));
+      }
+    }
+
+    async function cancelJob(jobId) {
+      try {
+        const res = await api("/api/job/cancel", { job_id: jobId });
+        if (res.state) renderState(res.state);
+      } catch (e) { showError(e.message); }
+    }
+
+    diffuseBtn.addEventListener("click", () => diffuse());
+
+    function setBusy(busy, label) {
+      diffuseBtn.classList.toggle("busy", busy);
+      diffuseBtn.title = busy ? "Cancel diffusion" : `Diffuse (${isMac ? "⌘" : "Ctrl+"}↵)`;
+      diffuseBtn.setAttribute("aria-label", busy ? "Cancel diffusion" : "Diffuse");
+      $("progressBar").classList.toggle("active", busy);
+      notepad.contentEditable = busy ? "false" : "true";
+      notepad.classList.toggle("busy", busy);
+      $("editorWrap").classList.toggle("busy", busy);
+      if (busy) {
+        if (!busySince) busySince = Date.now();
+        busyLabel = label || busyLabel || "Diffusing…";
+        tickBusy();
+        clearInterval(busyTimer);
+        busyTimer = setInterval(tickBusy, 1000);
+      } else {
+        busySince = 0;
+        clearInterval(busyTimer);
+        busyTimer = null;
+        hideToast();
+      }
+    }
+    let busyLabel = "";
+    function tickBusy() {
+      const secs = Math.round((Date.now() - busySince) / 1000);
+      toast(`${busyLabel}${secs >= 2 ? ` · ${secs}s` : ""}`, { sticky: true });
+    }
+
+    function friendlyStage(job) {
+      if (job.provider_used === "claimed_by_live_session") return "Agent is writing…";
+      if (job.provider_used === "awaiting_live_session") return "Sent to agent…";
+      const s = (job.stage_label || "Diffusing…").replace(/^Step \d+\/\d+ · /, "");
+      return s.length > 48 ? "Diffusing…" : s;
+    }
+
+    // ---------------------------------------------------------------- new doc
+    async function newDocument() {
+      const node = appState?.nodes?.[activeNodeId];
+      const blank = appState && Object.keys(appState.nodes).length === 1 && !getNotepadHtml() && !displayHtml(node);
+      if (blank) {
+        closeModals();
+        toast("This page is already blank");
+        notepad.focus();
+        return;
+      }
+      await flushSave();
+      try {
+        const res = await api("/api/doc/new", {});
+        closeModals();
+        setDiffMode(false);
+        clearError();
+        if (res.state) renderState(res.state, true);
+        notepad.focus();
+      } catch (e) { showError(e.message); }
+    }
+    $("newBtn").addEventListener("click", newDocument);
+    $("newDocInModalBtn").addEventListener("click", newDocument);
+
+    // ---------------------------------------------------------------- modals
+    function closeModals() { docsModal.classList.remove("open"); treeModal.classList.remove("open"); }
+    function openModal(m, render) {
+      closeModals();
+      m.classList.add("open");
+      if (appState) render(appState);
+      m.querySelector("[data-close]")?.focus();
+    }
+    $("docsModalBtn").addEventListener("click", () => openModal(docsModal, renderDocumentsModal));
+    $("treeModalBtn").addEventListener("click", () => openModal(treeModal, renderVersionTreeModal));
+    document.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", closeModals));
+    [docsModal, treeModal].forEach(m => m.addEventListener("click", (e) => { if (e.target === m) closeModals(); }));
+
+    async function selectNode(nodeId) {
+      if (nodeId === activeNodeId) return;
+      await flushSave();
+      try {
+        const res = await api("/api/node/select", { node_id: nodeId });
+        dirty = false;
+        closeModals();
+        if (res.state) renderState(res.state, true);
+      } catch (e) { showError(e.message); }
+    }
+
+    async function nodeAction(path, body, msg) {
+      await flushSave();
+      try {
+        const res = await api(path, body);
+        dirty = false;
+        if (res.state) renderState(res.state, true);
+        if (msg) toast(msg);
+      } catch (e) { showError(e.message); }
+    }
+
+    function treeLayout(state) {
+      const nodes = Object.values(state.nodes).sort((a, b) => a.version_num - b.version_num);
+      const children = {};
+      nodes.forEach(n => { children[n.id] = []; });
+      nodes.forEach(n => { if (n.parent_id && children[n.parent_id]) children[n.parent_id].push(n.id); });
+      const coords = {};
+      let maxDepth = 0, nextLane = 0;
+      const dfs = (id, depth) => {
+        maxDepth = Math.max(maxDepth, depth);
+        const kids = children[id] || [];
+        if (!kids.length) { coords[id] = { depth, lane: nextLane++ }; return coords[id].lane; }
+        const lanes = kids.map(k => dfs(k, depth + 1));
+        coords[id] = { depth, lane: (lanes[0] + lanes[lanes.length - 1]) / 2 };
+        return coords[id].lane;
+      };
+      if (state.root_id && state.nodes[state.root_id]) dfs(state.root_id, 0);
+      nodes.forEach(n => { if (!coords[n.id]) coords[n.id] = { depth: n.version_num, lane: nextLane++ }; });
+      return { nodes, coords, maxDepth, lanes: Math.max(1, nextLane) };
+    }
+
+    function renderVersionTreeModal(state) {
+      const { nodes, coords, maxDepth, lanes } = treeLayout(state);
+      const svg = $("treeSvg");
+      const stepX = 52, stepY = 46, pad = 24;
+      const w = Math.max(200, Math.ceil((lanes - 1) * stepX + pad * 2));
+      const h = Math.max(80, maxDepth * stepY + pad * 2);
+      svg.setAttribute("width", w);
+      svg.setAttribute("height", h);
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      const xy = (id) => ({ x: pad + (coords[id]?.lane || 0) * stepX + (w - ((lanes - 1) * stepX + pad * 2)) / 2, y: pad + (coords[id]?.depth || 0) * stepY });
+      const parts = [];
+      nodes.forEach(n => {
+        if (n.parent_id && state.nodes[n.parent_id]) {
+          const p = xy(n.parent_id), c = xy(n.id), my = (p.y + c.y) / 2;
+          parts.push(`<path class="te" d="M ${p.x} ${p.y} C ${p.x} ${my}, ${c.x} ${my}, ${c.x} ${c.y}" />`);
+        }
+      });
+      nodes.forEach(n => {
+        const { x, y } = xy(n.id);
+        const cls = ["tn", n.id === state.active_node_id ? "active" : "", n.draft != null ? "edited" : ""].join(" ");
+        parts.push(`<g class="${cls}" data-id="${escapeHtml(n.id)}" tabindex="0" role="button" aria-label="v${n.version_num}">
+          <title>v${n.version_num} · ${escapeHtml(shortLabel(n))}</title>
+          <circle cx="${x}" cy="${y}" r="13" /><text x="${x}" y="${y + 3.5}" text-anchor="middle">v${n.version_num}</text></g>`);
+      });
+      svg.innerHTML = parts.join("");
+      svg.querySelectorAll(".tn").forEach(el => {
+        el.addEventListener("click", () => selectNode(el.dataset.id));
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectNode(el.dataset.id); } });
+      });
+
+      const desc = [...nodes].sort((a, b) => b.version_num - a.version_num);
+      const list = $("versionList");
+      list.innerHTML = desc.map(n => {
+        const active = n.id === state.active_node_id;
+        const parent = n.parent_id ? state.nodes[n.parent_id] : null;
+        const edited = n.draft != null;
+        const preview = htmlToText(displayHtml(n)) || "(Blank page)";
+        const meta = [parent ? `from v${parent.version_num}` : "", n.provider_used || ""].filter(Boolean).join(" · ");
+        const summary = n.parent_id && n.diff_summary ? n.diff_summary : "";
+        let actions = "";
+        if (active) {
+          const btns = [];
+          if (parent) btns.push(`<button class="btn btn-small" data-act="compare">± Compare with v${parent.version_num}</button>`);
+          if (parent && n.input_content) btns.push(`<button class="btn btn-small" data-act="reroll" title="Diffuse the same input again for a different take">↻ Another take</button>`);
+          if (edited) {
+            btns.push(`<button class="btn btn-small" data-act="save">Save edits as v${state.next_version_num}</button>`);
+            btns.push(`<button class="btn btn-ghost btn-small" data-act="discard">Discard edits</button>`);
+          }
+          if (btns.length) actions = `<div class="item-actions">${btns.join("")}</div>`;
+        }
+        return `<div class="item ${active ? "active" : ""}" data-id="${escapeHtml(n.id)}" ${active ? "" : 'tabindex="0" role="button"'}>
+            <div class="item-top">
+              <strong><span class="mono">v${n.version_num}</span> · ${escapeHtml(shortLabel(n))}${active ? '<span class="badge badge-current">current</span>' : ""}${edited ? '<span class="badge badge-edited">edited</span>' : ""}</strong>
+              <span class="time">${relTime(n.created_at)}</span>
+            </div>
+            ${summary ? `<div class="item-summary">${escapeHtml(summary)}</div>` : ""}
+            <div class="item-preview">${escapeHtml(preview)}</div>
+            ${meta ? `<div class="item-summary">${escapeHtml(meta)}</div>` : ""}
+            ${actions}
+          </div>`;
+      }).join("");
+
+      list.querySelectorAll(".item:not(.active)").forEach(el => {
+        el.addEventListener("click", () => selectNode(el.dataset.id));
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter") selectNode(el.dataset.id); });
+      });
+      list.querySelectorAll("[data-act]").forEach(btn => btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const node = state.nodes[state.active_node_id];
+        const act = btn.dataset.act;
+        if (act === "compare") { closeModals(); setDiffMode(true); }
+        if (act === "save") nodeAction("/api/node/fork", { parent_id: node.id, content: getNotepadHtml() || node.draft, from_draft: true, diff_summary: "Hand edits saved as a version" }, "Saved as a new version");
+        if (act === "discard") nodeAction("/api/node/update", { node_id: node.id, discard_draft: true }, "Edits discarded");
+        if (act === "reroll") {
+          closeModals();
+          const comments = (node.comments || []).filter(c => c.resolved_in === `v${node.version_num}` && c.source !== "inline").map(c => ({ ...c, resolved: false, resolved_in: undefined }));
+          diffuse({ parent_id: node.parent_id, content: node.input_content, comments });
+        }
+      }));
+    }
+
+    function renderDocumentsModal(state) {
+      $("currentFolderLabel").textContent = state.folder_path ? `Saved in ${state.folder_path}` : "";
+      $("agentDetail").textContent = agentDescription(state.agent);
+      const docs = state.documents || [];
+      $("docCountLabel").textContent = docs.length ? `${docs.length}` : "";
+      const list = $("documentsList");
+      list.innerHTML = docs.map(d => `
+        <div class="item ${d.is_current ? "active" : ""}" data-doc-id="${escapeHtml(d.doc_id)}" ${d.is_current ? "" : 'tabindex="0" role="button"'}>
+          <div class="item-top">
+            <strong>${escapeHtml(d.title)}${d.is_current ? '<span class="badge badge-current">open</span>' : ""}</strong>
+            <span class="time">${relTime(d.updated_at)}</span>
+          </div>
+          <div class="item-preview">${escapeHtml(d.preview)}</div>
+          <div class="item-summary">${d.version_count} version${d.version_count === 1 ? "" : "s"}</div>
+        </div>`).join("");
+      list.querySelectorAll(".item:not(.active)").forEach(el => {
+        const open = async () => {
+          await flushSave();
+          try {
+            const res = await api("/api/doc/load", { doc_id: el.dataset.docId });
+            dirty = false;
+            lastLoadedNodeId = null;
+            closeModals();
+            setDiffMode(false);
+            clearError();
+            if (res.state) renderState(res.state, true);
+          } catch (e) { showError(e.message); }
+        };
+        el.addEventListener("click", open);
+        el.addEventListener("keydown", (e) => { if (e.key === "Enter") open(); });
+      });
+    }
+
+    // ---------------------------------------------------------------- agent status dot
+    function agentDescription(agent) {
+      if (!online) return "Server unreachable · reconnecting…";
+      if (!agent) return "";
+      if (agent.live_session) return "Agent live session connected · diffusions go to your agent";
+      if (agent.fallback_backends?.length) return `No live agent session · using ${agent.fallback_backends.join(", ")}`;
+      return "No agent connected · run the mindfusion skill in your agent, install an agent CLI, or set an API key";
+    }
+    function updateDot() {
+      const dot = $("agentDot");
+      const agent = appState?.agent;
+      const cls = !online ? "offline" : agent?.live_session ? "live" : agent?.fallback_backends?.length ? "fallback" : "none";
+      dot.className = `status-dot ${cls}`;
+      const desc = agentDescription(agent);
+      $("docsModalBtn").title = desc;
+      $("docsModalBtn").setAttribute("aria-label", `Documents. ${desc}`);
+    }
+    function setOnline(v) {
+      if (online === v) return;
+      online = v;
+      updateDot();
+      if (!v) toast("Reconnecting to server…", { sticky: true, subtle: true });
+      else if (!busySince) hideToast();
+    }
+
+    // ---------------------------------------------------------------- diff view
+    function blocksOf(html) {
+      const root = document.createElement("div");
+      root.innerHTML = isHtmlString(html) ? sanitizeHtml(html) : textToHtml(html || "");
+      const out = [];
+      const kind = (el) => {
+        const t = el === root ? "P" : el.tagName;
+        return /^H[1-6]$/.test(t) ? t.toLowerCase() : t === "LI" ? "li" : t === "PRE" ? "pre" : "p";
+      };
+      const inlineText = (n) => {
+        if (n.nodeType === 3) return n.textContent;
+        if (n.nodeType !== 1) return "";
+        if (n.tagName === "IMG") return ` [image${n.alt ? `: ${n.alt}` : ""}] `;
+        return [...n.childNodes].map(inlineText).join("");
+      };
+      const walk = (el) => {
+        let buf = "";
+        const flush = () => { const t = buf.replace(/\s+/g, " ").trim(); if (t) out.push({ tag: kind(el), text: t }); buf = ""; };
+        for (const ch of el.childNodes) {
+          if (ch.nodeType === 1 && ch.tagName === "BR") flush();
+          else if (ch.nodeType === 1 && ch.tagName === "PRE") { flush(); const t = ch.textContent.replace(/\s+$/, ""); if (t) out.push({ tag: "pre", text: t }); }
+          else if (ch.nodeType === 1 && ch.tagName === "TR") { flush(); const t = [...ch.children].map(c => c.textContent.trim()).join("  |  "); if (t) out.push({ tag: "p", text: t }); }
+          else if (ch.nodeType === 1 && (BLOCK_TAGS.has(ch.tagName))) { flush(); walk(ch); }
+          else buf += inlineText(ch);
+        }
+        flush();
+      };
+      walk(root);
+      return out;
+    }
+
+    function lcsOps(a, b, eq, limit = 400000) {
+      const n = a.length, m = b.length;
+      if (n * m > limit) return null;
+      const dp = Array.from({ length: n + 1 }, () => new Uint32Array(m + 1));
+      for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+        dp[i][j] = eq(a[i], b[j]) ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+      const ops = [];
+      let i = 0, j = 0;
+      while (i < n && j < m) {
+        if (eq(a[i], b[j])) { ops.push({ t: "eq", a: a[i++], b: b[j++] }); }
+        else if (dp[i + 1][j] >= dp[i][j + 1]) ops.push({ t: "del", a: a[i++] });
+        else ops.push({ t: "ins", b: b[j++] });
+      }
+      while (i < n) ops.push({ t: "del", a: a[i++] });
+      while (j < m) ops.push({ t: "ins", b: b[j++] });
+      return ops;
+    }
+
+    function similarity(x, y) {
+      const A = new Set(x.toLowerCase().split(/\s+/)), B = new Set(y.toLowerCase().split(/\s+/));
+      let inter = 0;
+      A.forEach(w => { if (B.has(w)) inter++; });
+      return inter / Math.max(1, A.size + B.size - inter);
+    }
+
+    function wordDiffHtml(x, y) {
+      const ta = x.split(/(\s+)/).filter(Boolean), tb = y.split(/(\s+)/).filter(Boolean);
+      const ops = lcsOps(ta, tb, (p, q) => p === q, 250000);
+      if (!ops) return null;
+      let html = "", cur = null, buf = "";
+      const close = () => { if (!buf) return; html += cur === "eq" ? escapeHtml(buf) : `<${cur}>${escapeHtml(buf)}</${cur}>`; buf = ""; };
+      for (const op of ops) {
+        const t = op.t === "eq" ? "eq" : op.t;
+        if (t !== cur) { close(); cur = t; }
+        buf += op.t === "ins" ? op.b : op.a;
+      }
+      close();
+      return html;
+    }
+
+    function blockHtml(block, cls, inner) {
+      const tag = block.tag === "li" ? "p" : block.tag;
+      const extra = block.tag === "li" ? " d-li" : "";
+      return `<${tag} class="${cls}${extra}">${inner ?? escapeHtml(block.text)}</${tag}>`;
+    }
+
+    function renderDiff() {
+      const node = appState?.nodes?.[activeNodeId];
+      const parent = node?.parent_id ? appState.nodes[node.parent_id] : null;
+      if (!node || !parent) { setDiffMode(false); return; }
+      const before = blocksOf(parent.content || parent.seed_outline || "");
+      const after = blocksOf(dirty ? getNotepadHtml() : displayHtml(node));
+      const ops = lcsOps(before, after, (p, q) => p.text === q.text, 4000000) ||
+        [...before.map(a => ({ t: "del", a })), ...after.map(b => ({ t: "ins", b }))];
+
+      // Pair up removed/added runs so lightly-edited paragraphs show word-level changes.
+      const rendered = [];
+      let plus = 0, minus = 0, changed = 0;
+      for (let k = 0; k < ops.length;) {
+        if (ops[k].t === "eq") { rendered.push({ eq: true, html: blockHtml(ops[k].b, "d-eq") }); k++; continue; }
+        const dels = [], ins = [];
+        while (k < ops.length && ops[k].t !== "eq") { (ops[k].t === "del" ? dels : ins).push(ops[k]); k++; }
+        const pairs = Math.min(dels.length, ins.length);
+        for (let p = 0; p < Math.max(dels.length, ins.length); p++) {
+          const d = dels[p]?.a, i = ins[p]?.b;
+          if (p < pairs && similarity(d.text, i.text) >= 0.3 && d.tag !== "pre") {
+            const inner = wordDiffHtml(d.text, i.text);
+            if (inner) { rendered.push({ html: blockHtml(i, "", inner) }); changed++; continue; }
+          }
+          if (d) { rendered.push({ html: blockHtml(d, "d-del") }); minus++; }
+          if (i) { rendered.push({ html: blockHtml(i, "d-ins") }); plus++; }
+        }
+      }
+
+      // Collapse long unchanged stretches.
+      const html = [];
+      for (let k = 0; k < rendered.length;) {
+        if (!rendered[k].eq) { html.push(rendered[k].html); k++; continue; }
+        let e = k;
+        while (e < rendered.length && rendered[e].eq) e++;
+        const run = rendered.slice(k, e);
+        if (run.length > 5) {
+          const hidden = run.slice(2, -2);
+          html.push(run[0].html, run[1].html,
+            `<button class="d-gap" data-hidden="${encodeURIComponent(hidden.map(r => r.html).join(""))}">⋯ ${hidden.length} unchanged block${hidden.length === 1 ? "" : "s"}</button>`,
+            run[run.length - 2].html, run[run.length - 1].html);
+        } else run.forEach(r => html.push(r.html));
+        k = e;
+      }
+      const none = !plus && !minus && !changed;
+      diffView.innerHTML = none ? `<div class="d-empty">No text changes from v${parent.version_num}.</div>` : html.join("");
+      diffView.querySelectorAll(".d-gap").forEach(b => b.addEventListener("click", () => {
+        const wrap = document.createElement("div");
+        wrap.innerHTML = decodeURIComponent(b.dataset.hidden);
+        b.replaceWith(...wrap.childNodes);
+      }));
+      $("diffMsg").innerHTML = `Changes from <b>v${parent.version_num}</b> → <b>v${node.version_num}</b>` +
+        `<span class="stat"><span class="plus">+${plus}</span> <span class="minus">−${minus}</span> ~${changed}</span>`;
+    }
+
+    function setDiffMode(on) {
+      const node = appState?.nodes?.[activeNodeId];
+      if (on && !node?.parent_id) { toast("v0 has nothing to compare with"); return; }
+      diffMode = on;
+      app.classList.toggle("diff-mode", on);
+      $("editorWrap").classList.toggle("diff-mode", on);
+      $("diffBanner").classList.toggle("open", on);
+      diffBtn.classList.toggle("on", on);
+      diffBtn.setAttribute("aria-pressed", String(on));
+      if (on) { closeCommentRow(); renderDiff(); diffView.scrollTop = 0; }
+    }
+    diffBtn.addEventListener("click", () => setDiffMode(!diffMode));
+    $("diffDoneBtn").addEventListener("click", () => setDiffMode(false));
+
+    // ---------------------------------------------------------------- render
+    function renderState(state, forceEditor = false) {
+      if (appState && state.server_id === appState.server_id && state.state_version < appState.state_version) return;
+      const prevNodeId = activeNodeId;
+      appState = state;
+      activeNodeId = state.active_node_id;
+      const node = state.nodes[activeNodeId];
+      const total = Object.keys(state.nodes || {}).length;
+      const currentDoc = (state.documents || []).find(d => d.is_current);
+      const title = (currentDoc && currentDoc.title) || (node && node.title) || "Untitled";
+      $("docLabel").textContent = title;
+      document.title = `${title} · MindFusion`;
+      updateDot();
+
+      const job = runningJob(state);
+
+      if (node) {
+        $("versionLabel").textContent = `v${node.version_num}`;
+        $("versionCount").textContent = total > 1 ? `/${total}` : "";
+        $("versionPill").classList.toggle("edited", node.draft != null);
+        $("treeModalBtn").setAttribute("aria-label", `Version ${node.version_num} of ${total}${node.draft != null ? ", edited" : ""}`);
+        diffBtn.disabled = !node.parent_id;
+
+        const serverContent = displayHtml(node).trim();
+        const nodeSwitched = prevNodeId !== activeNodeId || lastLoadedNodeId !== activeNodeId;
+        const focused = document.activeElement === notepad;
+        if (forceEditor || nodeSwitched || (!dirty && !pendingSave && !focused && serverContent !== lastLoadedContent)) {
+          setNotepadContent(serverContent, activeNodeId);
+        }
+        renderComments(node);
+        refreshHighlightsSoon();
+        if (diffMode) { if (node.parent_id) renderDiff(); else setDiffMode(false); }
+      }
+
+      if (job) {
+        if (!watchedJobId) watchedJobId = job.id;
+        setBusy(true, friendlyStage(job));
+      } else {
+        if (diffuseBtn.classList.contains("busy")) setBusy(false);
+        if (watchedJobId) {
+          const done = state.jobs?.[watchedJobId];
+          watchedJobId = null;
+          if (done?.status === "error") showError(done.error || "Diffusion failed.", () => diffuse());
+          else if (done?.status === "cancelled") toast("Diffusion cancelled");
+          else if (done?.status === "completed" && node) {
+            dirty = false;
+            notepad.classList.remove("reveal");
+            void notepad.offsetWidth; // restart the animation
+            notepad.classList.add("reveal");
+            notepad.addEventListener("animationend", () => notepad.classList.remove("reveal"), { once: true });
+            toast(`v${node.version_num} ready`);
+          }
+        }
+      }
+
+      if (docsModal.classList.contains("open")) renderDocumentsModal(state);
+      if (treeModal.classList.contains("open")) renderVersionTreeModal(state);
+    }
+
+    // ---------------------------------------------------------------- sync (long-poll)
+    async function syncLoop() {
+      for (;;) {
+        try {
+          const since = appState ? appState.state_version : -1;
+          const r = await fetch(`/api/state?since=${since}&wait=25`, { cache: "no-store" });
+          const data = await r.json();
+          setOnline(true);
+          if (data.unchanged) {
+            if (appState && data.server_id === appState.server_id) {
+              appState.agent = data.agent;
+              updateDot();
+            } else {
+              renderState(await api("/api/state"));
+            }
+          } else {
+            renderState(data);
+          }
+        } catch (e) {
+          setOnline(false);
+          await sleep(1500);
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------- keyboard
+    document.addEventListener("keydown", (e) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === "Enter") { e.preventDefault(); diffuse(); return; }
+      if (mod && e.key === "/") { e.preventDefault(); openCommentRow(); return; }
+      if (e.key === "Escape") {
+        if (docsModal.classList.contains("open") || treeModal.classList.contains("open")) closeModals();
+        else if (commentInputRow.classList.contains("open")) closeCommentRow();
+        else if (diffMode) setDiffMode(false);
+        else if (lastError) clearError();
+      }
+    });
+    if (!isMac) {
+      diffuseBtn.title = "Diffuse (Ctrl+↵)";
+      commentBtn.title = "Comment on selection (Ctrl+/)";
+      notepad.dataset.placeholder = notepad.dataset.placeholder.replace("⌘/Ctrl", "Ctrl");
+    } else {
+      notepad.dataset.placeholder = notepad.dataset.placeholder.replace("⌘/Ctrl", "⌘");
+    }
+    if (window.matchMedia("(hover: none)").matches) {
+      notepad.dataset.placeholder = notepad.dataset.placeholder.replace(/\n\n[^\n]*diffuses\.$/, "");
+    }
+
+    // ---------------------------------------------------------------- boot
+    (async () => {
+      try {
+        renderState(await api("/api/state"), true);
+      } catch (e) {
+        setOnline(false);
+      }
+      syncLoop();
+    })();
+  </script>
+</body>
+</html>
