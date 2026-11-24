@@ -1,9 +1,28 @@
 # MindFusion
 
-A diffusion-style writing studio for LLMs. You write rough notes on a page and tap **✦**.
-An agent "diffuses" them into a polished HTML page, which becomes a new version in a
-branching version tree. You then steer the next pass with `//` instructions, comments and
-hand edits.
+**A diffusion-style interface to agents, instead of a conversational one.**
+
+Chat makes you talk *about* the thing you want. The real work piles up in a scrolling
+transcript, and every change means describing it in a new message. MindFusion drops the
+conversation. There is only the page.
+
+You write rough notes and tap **✦**. Your agent refines the whole page in one pass, the way
+an image model denoises a canvas. The result becomes a new version in a branching tree.
+You steer the next pass on the page itself:
+
+| Image diffusion | MindFusion |
+|---|---|
+| Noisy canvas | Your rough notes |
+| Denoising step | One ✦ pass over the whole page |
+| Prompt / conditioning | `//` lines and comments placed where they apply |
+| Inpainting | Hand edits, which the next pass keeps and builds on |
+| Reroll the seed | **↻ another take** on the same input |
+| Seed history | A branching version tree with diffs |
+
+The state is the artifact, not a transcript. You never scroll back to find "the good
+version": you open the version tree and branch from it.
+
+> "Diffusion" describes the interaction, not the model. Any LLM agent can do the generation.
 
 It is a zero-dependency Python server ([`mindfusion/server.py`](mindfusion/server.py)) with a
 single-file, phone-friendly UI. It ships as an agent skill
